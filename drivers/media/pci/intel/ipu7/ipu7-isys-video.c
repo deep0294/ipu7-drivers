@@ -1004,7 +1004,12 @@ void ipu7_isys_fw_close(struct ipu7_isys *isys)
 		ipu7_fw_isys_close(isys);
 
 	mutex_unlock(&isys->mutex);
-	pm_runtime_put(&isys->adev->auxdev.dev);
+	/*
+	 * Force an immediate synchronous power-cycle of the IS island on
+	 * every close, ignoring autosuspend, so S2B/B2O return to POR state
+	 * even if STREAM_FLUSH/STREAM_CLOSE did not complete cleanly.
+	 */
+	pm_runtime_put_sync_suspend(&isys->adev->auxdev.dev);
 }
 #endif
 
