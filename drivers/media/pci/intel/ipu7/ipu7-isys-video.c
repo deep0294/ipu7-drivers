@@ -857,19 +857,16 @@ int ipu7_isys_video_set_streaming(struct ipu7_isys_video *av, int state,
 	sd = &stream->asd->sd;
 	r_pad = media_pad_remote_pad_first(&av->pad);
 	if (!state) {
-		stop_streaming_firmware(av);
-
-		/* stop sub-device which connects with video */
+		/* stop sensor first so no new frame cmds race the FW abort */
 		dev_dbg(dev, "disable streams %s pad:%d mask:0x%llx\n",
 			sd->name, r_pad->index, BIT_ULL(r_stream));
 		ret = v4l2_subdev_disable_streams(sd, r_pad->index,
 						  BIT_ULL(r_stream));
-		if (ret) {
+		if (ret)
 			dev_err(dev, "disable streams %s failed with %d\n",
 				sd->name, ret);
-			return ret;
-		}
 
+		stop_streaming_firmware(av);
 		close_streaming_firmware(av);
 		ipu7_cleanup_fw_msg_bufs_by_stream_id(av->isys, stream_id);
 	} else {
